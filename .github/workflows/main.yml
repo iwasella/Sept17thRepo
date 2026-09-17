@@ -45,7 +45,19 @@ jobs:
         run: flutter pub get
 
       - name: ✅ Run tests
-        run: flutter test --coverage
+        run: |
+          flutter test --coverage --machine > test-results.json
+          TEST_COUNT=$(python3 -c "import json; print(sum(1 for line in open('test-results.json') if line.strip().startswith('{') and json.loads(line).get('type') == 'testDone' and not json.loads(line).get('hidden', False)))")
+          echo "Flutter tests passed: ${TEST_COUNT}/5"
+          if [ "$TEST_COUNT" -ne 5 ]; then
+            echo "Expected exactly 5 tests, but found ${TEST_COUNT}." >&2
+            exit 1
+          fi
+          {
+            echo "## Flutter tests"
+            echo ""
+            echo "✅ **${TEST_COUNT}/5 tests passed**"
+          } >> "$GITHUB_STEP_SUMMARY"
 
 
       - name: 🏗️ Build APKs
